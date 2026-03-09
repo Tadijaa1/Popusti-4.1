@@ -1,0 +1,84 @@
+.auth-form {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+
+.form-group {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.form-group label {
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: #374151;
+}
+
+.form-group input {
+  padding: 14px 18px;
+  border: 2px solid #e5e7eb;
+  border-radius: 14px;
+  font-size: 1rem;
+  transition: all 0.25s ease;
+  background: #f9fafb;
+}
+
+.form-group input:focus {
+  outline: none;
+  border-color: #10b981;
+  background: white;
+  box-shadow: 0 0 0 4px rgba(16, 185, 129, 0.15);
+}
+
+.form-group input::placeholder {
+  color: #9ca3af;
+}
+
+.auth-submit-btn {
+  padding: 16px 28px;
+  background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+  color: white;
+  border: none;
+  border-radius: 14px;
+  font-size: 1.05rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  margin-top: 12px;
+  box-shadow: 0 4px 15px rgba(16, 185, 129, 0.4);
+}
+
+.auth-submit-btn:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 8px 25px rgba(16, 185, 129, 0.5);
+}
+
+.auth-submit-btn:active {
+  transform: translateY(-1px);
+}
+
+.auth-switch {
+  text-align: center;
+  font-size: 0.95rem;
+  color: #6b7280;
+  margin: 16px 0 0 0;
+}
+
+.auth-switch button {
+  background: none;
+  border: none;
+  color: #10b981;
+  font-weight: 700;
+  cursor: pointer;
+  font-size: 0.95rem;
+  padding: 0;
+  margin-left: 6px;
+  transition: color 0.2s;
+}
+
+.auth-switch button:hover {
+  color: #059669;
+  text-decoration: underline;
+}
