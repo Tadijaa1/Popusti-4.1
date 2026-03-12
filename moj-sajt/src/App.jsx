@@ -3,6 +3,7 @@ import { Routes, Route, Link, useParams, useSearchParams } from "react-router-do
 import { collection, getDocs } from "firebase/firestore";
 import { db, saveProduct, unsaveProduct, getSavedProducts, isProductSaved } from "./firebase";
 import AuthModal from "./components/AuthModal";
+import RecommendedPage from "./RecommendedPage";
 import { auth } from "./firebase";
 import { onAuthStateChanged, signOut } from "firebase/auth";
 
@@ -152,6 +153,7 @@ function App() {
         />} />
         <Route path="/store/:storeId" element={<StoreProductsPage user={user} />} />
         <Route path="/saved" element={<SavedProductsPage user={user} />} />
+        <Route path="/recommended" element={<RecommendedPage user={user} />} />
       </Routes>
     </div>
   )
@@ -720,6 +722,11 @@ function SavedProductsPage({ user }) {
         <div className="header-content">
           <h1 className="title">Sačuvano</h1>
           <p className="subtitle">{savedProducts.length} proizvoda</p>
+          {/*
+          <Link to="/recommended" className="filter-btn" style={{ marginTop: "15px", display: "inline-block" }}>
+            Preporučeni popusti
+          </Link>
+          */}
         </div>
       </header>
 
@@ -746,5 +753,6 @@ function SavedProductsPage({ user }) {
     </div>
   )
 }
+
 
 export default App
