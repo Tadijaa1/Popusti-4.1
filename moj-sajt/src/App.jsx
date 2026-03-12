@@ -1,7 +1,7 @@
 import { useState, useRef, useEffect } from "react";
 import { Routes, Route, Link, useParams, useSearchParams } from "react-router-dom";
 import { collection, getDocs } from "firebase/firestore";
-import { db } from "./firebase";
+import { db, saveProduct, unsaveProduct, getSavedProducts, isProductSaved } from "./firebase";
 import AuthModal from "./components/AuthModal";
 import { auth } from "./firebase";
 import { onAuthStateChanged, signOut } from "firebase/auth";
@@ -151,22 +151,56 @@ function App() {
           setIsAuthModalOpen={setIsAuthModalOpen}
         />} />
         <Route path="/store/:storeId" element={<StoreProductsPage user={user} />} />
+        <Route path="/saved" element={<SavedProductsPage user={user} />} />
       </Routes>
     </div>
   )
 }
 
-function ProductCard({ product, user, setIsAuthModalOpen }) {
-  const [saved, setSaved] = useState(false)
-  const handleSaveClick = () => {
-  if (!user) {
-    alert("Moraš da napraviš nalog ili da se prijaviš da bi sačuvao proizvod.");
-    setIsAuthModalOpen(true);
-    return;
-  }
+function ProductCard({ product, user, setIsAuthModalOpen, initialSaved = false }) {
+  const [saved, setSaved] = useState(initialSaved)
+  const [loading, setLoading] = useState(false)
 
-  setSaved(!saved);
-};
+  useEffect(() => {
+    const checkSavedStatus = async () => {
+      if (user) {
+        try {
+          const status = await isProductSaved(user.uid, product.id);
+          setSaved(status);
+        } catch (err) {
+          console.error("Greška pri proveri statusa:", err);
+        }
+      } else {
+        setSaved(initialSaved);
+      }
+    };
+    checkSavedStatus();
+  }, [user, product.id, initialSaved]);
+
+  const handleSaveClick = async () => {
+    if (!user) {
+      alert("Moraš da napraviš nalog ili da se prijaviš da bi sačuvao proizvod.");
+      setIsAuthModalOpen(true);
+      return;
+    }
+
+    if (loading) return;
+    setLoading(true);
+
+    try {
+      if (saved) {
+        await unsaveProduct(user.uid, product.id);
+      } else {
+        await saveProduct(user.uid, product);
+      }
+      setSaved(!saved);
+    } catch (err) {
+      console.error("Greška pri čuvanju:", err);
+      alert("Došlo je do greške");
+    } finally {
+      setLoading(false);
+    }
+  };
 
   return (
     <div className="product-card">
@@ -238,12 +272,12 @@ function HomePage({
           <span>{user ? (user.displayName || user.email.split("@")[0]) : "Profil"}</span>
         </button>
         {user && (
-  <button className="nav-btn">
+  <Link to="/saved" className="nav-btn">
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
       <path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/>
     </svg>
     <span>Sačuvano</span>
-  </button>
+  </Link>
 )}
       </nav>
 
@@ -568,6 +602,138 @@ function StoreProductsPage({ user }) {
   user={user}
   setIsAuthModalOpen={setIsAuthModalOpen}
 />
+          ))
+        )}
+      </div>
+
+      <AuthModal
+        isOpen={isAuthModalOpen}
+        onClose={() => setIsAuthModalOpen(false)}
+        user={user}
+      />
+    </div>
+  )
+}
+
+function SavedProductsPage({ user }) {
+  const [savedProducts, setSavedProducts] = useState([])
+  const [loading, setLoading] = useState(true)
+  const [isAuthModalOpen, setIsAuthModalOpen] = useState(false)
+
+  useEffect(() => {
+    const fetchSavedProducts = async () => {
+      if (!user) {
+        setLoading(false)
+        return
+      }
+
+      try {
+        const products = await getSavedProducts(user.uid)
+        setSavedProducts(products)
+      } catch (err) {
+        console.error("Greška pri učitavanju:", err)
+      } finally {
+        setLoading(false)
+      }
+    }
+
+    fetchSavedProducts()
+  }, [user])
+
+  if (loading) {
+    return (
+      <div className="app">
+        <div className="loading">Učitavanje...</div>
+      </div>
+    )
+  }
+
+  if (!user) {
+    return (
+      <div className="app">
+        <nav className="top-nav">
+          <Link to="/" className="nav-btn">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+              <polyline points="15 18 9 12 15 6"/>
+            </svg>
+            <span>Nazad</span>
+          </Link>
+          <button
+            className="nav-btn"
+            onClick={() => setIsAuthModalOpen(true)}
+          >
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+              <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
+              <circle cx="12" cy="7" r="4"/>
+            </svg>
+            <span>Profil</span>
+          </button>
+        </nav>
+        <div className="no-products" style={{ padding: "40px", textAlign: "center" }}>
+          <p>Moraš da budeš prijavljen da bi video sačuvane proizvode.</p>
+          <button
+            onClick={() => setIsAuthModalOpen(true)}
+            style={{
+              marginTop: "20px",
+              padding: "12px 24px",
+              backgroundColor: "#4CAF50",
+              color: "white",
+              border: "none",
+              borderRadius: "8px",
+              cursor: "pointer"
+            }}
+          >
+            Prijavi se
+          </button>
+        </div>
+        <AuthModal
+          isOpen={isAuthModalOpen}
+          onClose={() => setIsAuthModalOpen(false)}
+          user={user}
+        />
+      </div>
+    )
+  }
+
+  return (
+    <div className="app">
+      <nav className="top-nav">
+        <Link to="/" className="nav-btn">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+            <polyline points="15 18 9 12 15 6"/>
+          </svg>
+          <span>Nazad</span>
+        </Link>
+        <button
+          className="nav-btn"
+          onClick={() => setIsAuthModalOpen(true)}
+        >
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+            <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
+            <circle cx="12" cy="7" r="4"/>
+          </svg>
+          <span>{user.displayName || user.email.split("@")[0]}</span>
+        </button>
+      </nav>
+
+      <header className="header">
+        <div className="header-content">
+          <h1 className="title">Sačuvano</h1>
+          <p className="subtitle">{savedProducts.length} proizvoda</p>
+        </div>
+      </header>
+
+      <div className="store-products-grid">
+        {savedProducts.length === 0 ? (
+          <div className="no-products">Nemaš sačuvanih proizvoda</div>
+        ) : (
+          savedProducts.map(product => (
+            <ProductCard
+              key={product.id}
+              product={product}
+              user={user}
+              setIsAuthModalOpen={setIsAuthModalOpen}
+            />
           ))
         )}
       </div>
